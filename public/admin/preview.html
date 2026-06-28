@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoMel Cars — Admin (UI Preview)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    /* Apply the saved theme before first paint to avoid a flash. */
+    (function () {
+      try {
+        var p = localStorage.getItem('gomel_admin_theme') || 'system';
+        var dark = p === 'dark' || (p === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+</head>
+<body>
+  <!-- Floating badge so it's obvious this is the offline mock, not the live panel -->
+  <div style="position:fixed;bottom:18px;right:18px;z-index:9999;background:rgba(245,158,11,.95);
+              color:#1a1a1a;font:700 11px/1.3 'Inter',system-ui,sans-serif;border-radius:10px;
+              padding:9px 13px;letter-spacing:.2px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:220px;">
+    UI PREVIEW · mock data, no backend.<br>Login is pre-filled — just click “Sign in”.
+  </div>
+
+  <!-- Login -->
+  <div id="login" class="login-wrap">
+    <form id="loginForm" class="login-card">
+      <div class="brand">🚗 GoMel Cars</div>
+      <div class="brand-sub">Admin Panel</div>
+      <label>Email</label>
+      <input id="email" type="email" value="admin@gomelcars.com" required />
+      <label>Password</label>
+      <input id="password" type="password" value="admin123" required />
+      <button type="submit">Sign in</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">🚗 GoMel</div>
+      <nav>
+        <a data-tab="dashboard" class="active">Dashboard</a>
+        <a data-tab="cars">Cars</a>
+        <a data-tab="bookings">Bookings</a>
+        <a data-tab="users">Users</a>
+        <a data-tab="claims">Claims</a>
+        <a data-tab="offers">Offers</a>
+        <a data-tab="payouts">Payouts</a>
+        <a data-tab="broadcast">Notify</a>
+      </nav>
+      <button id="logout" class="logout">Sign out</button>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="topbar-right">
+          <div id="themePicker"></div>
+          <span id="who" class="who"></span>
+        </div>
+      </header>
+      <section id="view" class="view"></section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modalTitle">Edit</h3>
+        <button id="modalClose" class="icon-btn">✕</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- ============ MOCK BACKEND (runs entirely in the browser) ============ -->
+  <script>
+  (function () {
+    // Always start at the login screen for the preview.
+    try { localStorage.removeItem('gomel_admin_token'); } catch (e) {}
+
+    const DB = {
+      stats: { revenue: 90700, bookings: 11, cars: 7, users: 318, hosts: 27, pendingKyc: 2, openClaims: 2, pendingPayouts: 2 },
+      cars: [
+        { id: 'car_01', name: 'Hyundai Creta', type: 'SUV', transmission: 'automatic', fuel: 'petrol', seats: 5, pricePerHour: 180, pricePerDay: 2800, rating: 4.7, active: true, pickupAddress: 'Satellite, Ahmedabad', images: ['https://images.unsplash.com/photo-1502877338535-766e1452684a?w=120'], host: { name: 'Ravi Patel' } },
+        { id: 'car_02', name: 'Maruti Swift', type: 'Hatchback', transmission: 'manual', fuel: 'petrol', seats: 5, pricePerHour: 90, pricePerDay: 1400, rating: 4.5, active: true, pickupAddress: 'Bopal, Ahmedabad', images: ['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=120'], host: { name: 'Mehul Shah' } },
+        { id: 'car_03', name: 'Toyota Fortuner', type: 'Luxury', transmission: 'automatic', fuel: 'diesel', seats: 7, pricePerHour: 350, pricePerDay: 6500, rating: 4.9, active: true, pickupAddress: 'Prahlad Nagar, Ahmedabad', images: ['https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=120'], host: { name: 'Ravi Patel' } },
+        { id: 'car_04', name: 'Honda City', type: 'Sedan', transmission: 'manual', fuel: 'petrol', seats: 5, pricePerHour: 140, pricePerDay: 2200, rating: 4.3, active: false, pickupAddress: 'Maninagar, Ahmedabad', images: [''], host: { name: 'Kiran Joshi' } },
+        { id: 'car_05', name: 'Kia Seltos', type: 'SUV', transmission: 'automatic', fuel: 'petrol', seats: 5, pricePerHour: 170, pricePerDay: 2600, rating: 4.6, active: true, pickupAddress: 'Vastrapur, Ahmedabad', images: ['https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=120'], host: { name: 'Mehul Shah' } },
+        { id: 'car_06', name: 'Tata Nexon', type: 'SUV', transmission: 'manual', fuel: 'electric', seats: 5, pricePerHour: 150, pricePerDay: 2400, rating: 4.4, active: true, pickupAddress: 'Chandkheda, Ahmedabad', images: ['https://images.unsplash.com/photo-1485291571150-772bcfc10da5?w=120'], host: { name: 'Kiran Joshi' } },
+        { id: 'car_07', name: 'Honda Amaze', type: 'Sedan', transmission: 'automatic', fuel: 'petrol', seats: 5, pricePerHour: 130, pricePerDay: 2000, rating: 4.2, active: true, pickupAddress: 'Naranpura, Ahmedabad', images: ['https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=120'], host: { name: 'Ravi Patel' } },
+      ],
+      bookings: [
+        { id: 'bk_1042', car: { name: 'Hyundai Creta' }, start: '2026-06-20', end: '2026-06-23', createdAt: '2026-06-12', fare: { base: 8400, taxes: 1512, deposit: 3000 }, status: 'upcoming', tripStarted: false, isVerifiedByHost: false },
+        { id: 'bk_1041', car: { name: 'Toyota Fortuner' }, start: '2026-06-15', end: '2026-06-18', createdAt: '2026-06-10', fare: { base: 19500, taxes: 3510, deposit: 5000 }, status: 'ongoing', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_1039', car: { name: 'Maruti Swift' }, start: '2026-06-08', end: '2026-06-10', createdAt: '2026-06-05', fare: { base: 2800, taxes: 504, deposit: 2000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_1037', car: { name: 'Honda City' }, start: '2026-06-05', end: '2026-06-06', createdAt: '2026-06-02', fare: { base: 2200, taxes: 396, deposit: 2000 }, status: 'cancelled', tripStarted: false, isVerifiedByHost: false },
+        { id: 'bk_1030', car: { name: 'Toyota Fortuner' }, start: '2026-05-20', end: '2026-05-24', createdAt: '2026-05-18', fare: { base: 26000, taxes: 4680, deposit: 5000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_1025', car: { name: 'Hyundai Creta' }, start: '2026-05-08', end: '2026-05-12', createdAt: '2026-05-06', fare: { base: 11200, taxes: 2016, deposit: 3000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_1018', car: { name: 'Maruti Swift' }, start: '2026-04-16', end: '2026-04-20', createdAt: '2026-04-14', fare: { base: 5600, taxes: 1008, deposit: 2000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_1012', car: { name: 'Honda City' }, start: '2026-04-05', end: '2026-04-07', createdAt: '2026-04-03', fare: { base: 4400, taxes: 792, deposit: 2000 }, status: 'cancelled', tripStarted: false, isVerifiedByHost: false },
+        { id: 'bk_1006', car: { name: 'Toyota Fortuner' }, start: '2026-03-24', end: '2026-03-27', createdAt: '2026-03-22', fare: { base: 13000, taxes: 2340, deposit: 5000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_1001', car: { name: 'Hyundai Creta' }, start: '2026-02-20', end: '2026-02-23', createdAt: '2026-02-18', fare: { base: 8400, taxes: 1512, deposit: 3000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+        { id: 'bk_0995', car: { name: 'Maruti Swift' }, start: '2026-01-21', end: '2026-01-24', createdAt: '2026-01-19', fare: { base: 4200, taxes: 756, deposit: 2000 }, status: 'completed', tripStarted: true, isVerifiedByHost: true },
+      ],
+      users: [
+        { id: 'usr_01', name: 'John Doe', phone: '+91 98250 12345', email: 'john.doe@example.com', role: 'user', licenseStatus: 'verified', walletBalance: 1250, upiId: 'john@okhdfc', referralCode: 'JOHN123', avatarUrl: 'https://i.pravatar.cc/120?img=12', createdAt: '2026-02-14',
+          kyc: { licenseNumber: 'GJ0120190001234', frontImage: 'https://picsum.photos/seed/lic-front-1/640/400', backImage: 'https://picsum.photos/seed/lic-back-1/640/400' } },
+        { id: 'usr_02', name: 'Priya Nair', phone: '+91 99098 55512', email: 'priya@example.com', role: 'user', licenseStatus: 'pending', walletBalance: 0, upiId: '', referralCode: 'PRIYA88', avatarUrl: '', createdAt: '2026-06-15',
+          kyc: { licenseNumber: 'KL0720210045678', frontImage: 'https://picsum.photos/seed/lic-front-2/640/400', backImage: 'https://picsum.photos/seed/lic-back-2/640/400' } },
+        { id: 'usr_03', name: 'Ravi Patel', phone: '+91 90999 77123', email: 'ravi@example.com', role: 'host', licenseStatus: 'verified', walletBalance: 8600, upiId: 'ravi@okhdfc', referralCode: 'RAVI500', avatarUrl: 'https://i.pravatar.cc/120?img=33', createdAt: '2025-11-02',
+          kyc: { licenseNumber: 'GJ0120170099887', frontImage: 'https://picsum.photos/seed/lic-front-3/640/400', backImage: '' } },
+        { id: 'usr_04', name: 'Aman Verma', phone: '+91 98765 43210', email: '', role: 'user', licenseStatus: 'pending', walletBalance: 300, upiId: '', referralCode: '', avatarUrl: '', createdAt: '2026-06-17',
+          kyc: { licenseNumber: 'MH0120220011223', frontImage: 'https://picsum.photos/seed/lic-front-4/640/400', backImage: '' } },
+      ],
+      claims: [
+        { id: 'clm_21', carName: 'Hyundai Creta', severity: 'minor', description: 'Scratch on the rear left bumper after parking.', status: 'submitted', insurer: '', processingFee: 0 },
+        { id: 'clm_20', carName: 'Toyota Fortuner', severity: 'major', description: 'Front windshield cracked by a stone on the highway.', status: 'underReview', insurer: 'ICICI Lombard', processingFee: 1500 },
+        { id: 'clm_18', carName: 'Maruti Swift', severity: 'minor', description: 'Side mirror clipped, small dent.', status: 'resolved', insurer: 'HDFC Ergo', processingFee: 800 },
+      ],
+      offers: [
+        { id: 'FIRST20', discountPct: 0.20, title: 'First ride 20% off', description: 'New users only', minFare: 1000, maxDiscount: 500, active: true },
+        { id: 'SAVE15', discountPct: 0.15, title: 'Weekend 15% off', description: 'Fri–Sun bookings', minFare: 2000, maxDiscount: 0, active: true },
+        { id: 'MONSOON10', discountPct: 0.10, title: 'Monsoon special', description: '', minFare: 0, maxDiscount: 0, active: false },
+      ],
+      payouts: [
+        { id: 'po_31', hostName: 'Ravi Patel', host: 'usr_03', amount: 7400, upiId: 'ravi@okhdfc', status: 'requested', createdAt: '2026-06-17' },
+        { id: 'po_30', hostName: 'Mehul Shah', host: 'usr_05', amount: 3200, upiId: 'mehul@oksbi', status: 'requested', createdAt: '2026-06-16' },
+        { id: 'po_28', hostName: 'Kiran Joshi', host: 'usr_07', amount: 5100, upiId: 'kiran@okaxis', status: 'paid', createdAt: '2026-06-12' },
+        { id: 'po_25', hostName: 'Ravi Patel', host: 'usr_03', amount: 2600, upiId: 'ravi@okhdfc', status: 'rejected', createdAt: '2026-06-08' },
+      ],
+    };
+
+    function ok(data) { return Promise.resolve({ ok: true, status: 200, json: async () => data }); }
+
+    // Intercept all fetch() calls app.js makes and answer them from DB above.
+    window.fetch = function (url, opts = {}) {
+      const path = String(url).split('/api')[1] || String(url);
+      const method = (opts.method || 'GET').toUpperCase();
+
+      if (path.endsWith('/admin/login'))      return ok({ token: 'preview-token', user: { email: 'admin@gomelcars.com' } });
+      if (path.endsWith('/admin/stats'))      return ok({ data: DB.stats });
+      if (path.endsWith('/admin/cars') && method === 'GET')      return ok({ data: DB.cars });
+      if (path.endsWith('/admin/bookings'))   return ok({ data: DB.bookings });
+      if (path.endsWith('/admin/users'))      return ok({ data: DB.users });
+      if (path.endsWith('/admin/claims'))     return ok({ data: DB.claims });
+      if (path.endsWith('/admin/offers') && method === 'GET')    return ok({ data: DB.offers });
+      if (path.endsWith('/admin/payouts'))    return ok({ data: DB.payouts });
+
+      // Any mutation (create/edit/delete/broadcast/kyc) → just succeed.
+      return ok({ ok: true, data: {} });
+    };
+  })();
+  </script>
+
+  <script src="app.js"></script>
+</body>
+</html>

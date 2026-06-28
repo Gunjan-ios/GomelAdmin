@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoMel Cars — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    /* Apply the saved theme before first paint to avoid a flash. */
+    (function () {
+      try {
+        var p = localStorage.getItem('gomel_admin_theme') || 'system';
+        var dark = p === 'dark' || (p === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+</head>
+<body>
+  <!-- Login -->
+  <div id="login" class="login-wrap">
+    <form id="loginForm" class="login-card">
+      <div class="brand">🚗 GoMel Cars</div>
+      <div class="brand-sub">Admin Panel</div>
+      <label>Email</label>
+      <input id="email" type="email" value="admin@gomelcars.com" required />
+      <label>Password</label>
+      <input id="password" type="password" value="" required />
+      <button type="submit">Sign in</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="app hidden">
+    <!-- Backdrop for the mobile slide-in sidebar; tap to dismiss. -->
+    <div id="sidebarScrim" class="sidebar-scrim"></div>
+    <aside class="sidebar">
+      <div class="brand"><img src="logo.png" alt="GoMel" class="brand-logo" /> GoMel</div>
+      <nav>
+        <a data-tab="dashboard" class="active">Dashboard</a>
+        <a data-tab="cars">Cars</a>
+        <a data-tab="bookings">Bookings</a>
+        <a data-tab="users">Users</a>
+        <a data-tab="claims">Claims</a>
+        <a data-tab="reviews">Reviews</a>
+        <a data-tab="offers">Offers</a>
+        <a data-tab="rewards">Rewards</a>
+        <a data-tab="subscriptions">Membership</a>
+        <a data-tab="payouts">Payouts</a>
+        <a data-tab="support">Support</a>
+        <a data-tab="broadcast">Notify</a>
+        <a data-tab="settings">Settings</a>
+      </nav>
+      <button id="logout" class="logout">Sign out</button>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="menuToggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false"></button>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <div id="themePicker"></div>
+          <span id="who" class="who"></span>
+        </div>
+      </header>
+      <section id="view" class="view"></section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modalTitle">Edit</h3>
+        <button id="modalClose" class="icon-btn">✕</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Socket.IO client (served by the API server, version-matched). Real-time
+       support chat; the panel falls back to polling if this is unavailable. -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
