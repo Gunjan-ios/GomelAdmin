@@ -84,6 +84,9 @@ app.use('/admin-react', express.static(path.join(__dirname, '..', 'public', 'adm
 // Health check.
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+// Redirect root URL to the admin panel.
+app.get('/', (req, res) => res.redirect('/admin-panel'));
+
 // All API routes are under /api.
 app.use('/api', routes);
 
