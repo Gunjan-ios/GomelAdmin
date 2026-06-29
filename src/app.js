@@ -43,7 +43,17 @@ app.get('/', (req, res) => {
 });
 
 // Health check.
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    cloudinary: {
+      enabled: env.cloudinaryEnabled,
+      cloudName: env.cloudinaryCloudName || null,
+      hasApiKey: !!env.cloudinaryApiKey,
+      hasApiSecret: !!env.cloudinaryApiSecret,
+    },
+  });
+});
 
 // All API routes are under /api.
 app.use('/api', routes);
