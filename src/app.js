@@ -37,6 +37,11 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // Admin web panel — React app (Vite build output in public/admin).
 app.use('/admin-panel', express.static(path.join(__dirname, '..', 'public', 'admin')));
 
+// Redirect root to the admin panel.
+app.get('/', (req, res) => {
+  res.redirect('/admin-panel/');
+});
+
 // Health check.
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
