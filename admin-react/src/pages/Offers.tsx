@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 import type { Offer, Envelope } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { money } from '../lib/format';
 import { PaginatedTable } from '../components/Table';
 import { RowActions } from '../components/RowActions';
@@ -11,7 +12,7 @@ import { OfferForm } from '../modals/OfferForm';
 export function Offers() {
   const { data, loading, error, reload } = useFetch(() => api<Envelope<Offer[]>>('/admin/offers'));
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={6} toolbar={false} headBtn />;
   if (error) return <div className="empty">{error}</div>;
 
   const offers = data?.data || [];

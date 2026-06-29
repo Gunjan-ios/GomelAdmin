@@ -8,6 +8,7 @@ import { PlanCard } from '../components/PlanCard';
 import { openModal } from '../components/Modal';
 import { toast } from '../components/Toast';
 import { PlanForm } from '../modals/PlanForm';
+import { SubscriptionsSkeleton } from '../components/Skeleton';
 
 export function Subscriptions() {
   const {
@@ -21,7 +22,7 @@ export function Subscriptions() {
     api<Envelope<Subscriber[]>>('/admin/subscribers').catch(() => ({ data: [] as Subscriber[] })),
   );
 
-  if (plansLoading) return <div className="empty">Loading…</div>;
+  if (plansLoading) return <SubscriptionsSkeleton />;
   if (plansError) return <div className="empty">{plansError}</div>;
 
   const plans = plansData?.data || [];

@@ -10,6 +10,7 @@ import {
   revByMonth,
 } from '../lib/chart-helpers';
 import { AreaChart, AttnRow, Donut, HBars, KpiCard, Sparkline, type DonutSeg } from '../components/Charts';
+import { DashboardSkeleton } from '../components/Skeleton';
 
 interface DashData {
   s: Stats;
@@ -47,7 +48,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { data, loading, error } = useFetch(loadDashboard);
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <DashboardSkeleton />;
   if (error) return <div className="empty">{error}</div>;
   if (!data) return <div className="empty">No data.</div>;
 

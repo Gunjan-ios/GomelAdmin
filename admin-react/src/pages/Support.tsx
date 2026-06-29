@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { ChatSkeleton } from '../components/Skeleton';
 import { api, getToken } from '../lib/api';
-import { fmtTime } from '../lib/format';
+import { dayLabel, fmtTime, sameDay } from '../lib/format';
 import { toast } from '../components/Toast';
 import type { Envelope, SupportConvo, SupportMessage } from '../lib/types';
 
@@ -256,7 +257,7 @@ export function Support() {
 
       <div className="support-chat" id="supChat">
         {loading ? (
-          <div className="empty">Loading…</div>
+          <ChatSkeleton />
         ) : error ? (
           <div className="empty">{error}</div>
         ) : !active ? (
@@ -284,28 +285,37 @@ export function Support() {
             </div>
 
             <div className="sup-msgs" id="supMsgs" ref={msgsBoxRef}>
-              {messages.map((m) => {
+              {messages.map((m, i) => {
                 const images = Array.isArray(m.images) ? m.images.filter(Boolean) : [];
+                const prev = messages[i - 1];
+                const showDay = !prev || !sameDay(prev.time, m.time);
                 return (
-                  <div key={m.id} className={`sup-msg ${m.fromMe ? 'out' : 'in'}`}>
-                    {images.length > 0 && (
-                      <div className="sup-imgs">
-                        {images.map((src) => (
-                          <a
-                            key={src}
-                            href={src}
-                            target="_blank"
-                            rel="noopener"
-                            className="sup-img"
-                          >
-                            <img src={src} alt="attachment" loading="lazy" />
-                          </a>
-                        ))}
+                  <Fragment key={m.id}>
+                    {showDay && (
+                      <div className="sup-day">
+                        <span>{dayLabel(m.time)}</span>
                       </div>
                     )}
-                    {m.text ? <div className="sup-bubble">{m.text}</div> : null}
-                    <div className="sup-msg-time">{fmtTime(m.time)}</div>
-                  </div>
+                    <div className={`sup-msg ${m.fromMe ? 'out' : 'in'}`}>
+                      {images.length > 0 && (
+                        <div className="sup-imgs">
+                          {images.map((src) => (
+                            <a
+                              key={src}
+                              href={src}
+                              target="_blank"
+                              rel="noopener"
+                              className="sup-img"
+                            >
+                              <img src={src} alt="attachment" loading="lazy" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {m.text ? <div className="sup-bubble">{m.text}</div> : null}
+                      <div className="sup-msg-time">{fmtTime(m.time)}</div>
+                    </div>
+                  </Fragment>
                 );
               })}
             </div>

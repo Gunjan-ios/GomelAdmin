@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 import type { Claim, Envelope } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { FilterableList, type Control } from '../components/FilterableList';
 import { StatusPill } from '../components/StatusPill';
 import { RowActions } from '../components/RowActions';
@@ -11,7 +12,7 @@ import { ClaimForm } from '../modals/ClaimForm';
 export function Claims() {
   const { data, loading, error, reload } = useFetch(() => api<Envelope<Claim[]>>('/admin/claims'));
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={6} />;
   if (error) return <div className="empty">{error}</div>;
 
   const claims = data?.data || [];

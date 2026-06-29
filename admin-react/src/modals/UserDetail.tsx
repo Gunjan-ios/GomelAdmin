@@ -16,6 +16,17 @@ export async function setKyc(user: User, status: LicenseStatus, onSaved: () => v
   }
 }
 
+// Human label for a licence status (camelCase → readable).
+const LICENCE_LABEL: Record<string, string> = {
+  verified: 'Verified',
+  pending: 'Pending review',
+  submitted: 'Submitted',
+  notSubmitted: 'Not submitted',
+};
+function licenceLabel(s: string): string {
+  return LICENCE_LABEL[s] || s || '—';
+}
+
 // Read-only user view — shows the uploaded licence photos so the admin can
 // verify the user/host before approving KYC.
 export function UserDetail({ user: u, onSaved }: { user: User; onSaved: () => void }) {
@@ -34,72 +45,126 @@ export function UserDetail({ user: u, onSaved }: { user: User; onSaved: () => vo
 
   return (
     <div className="udetail">
-      <div className="ud-head">
-        <div className="ud-avatar">{avatar ? <img src={avatar} alt="" /> : initials}</div>
-        <div className="ud-id">
-          <div className="ud-name">
-            {u.name || 'Unnamed user'} <StatusPill status={u.role} />
-          </div>
-          <div className="ud-sub">
-            {fmtPhone(u.phone)}
-            {u.email ? ' · ' + u.email : ''}
-          </div>
-        </div>
-      </div>
-
-      <div className="ud-section">
-        <div className="ud-section-h">
-          <span>Driving licence</span>
-          <StatusPill status={u.licenseStatus} />
-        </div>
-        <div className="ud-kv">
-          <span>Licence number</span>
-          <b>{k.licenseNumber || '—'}</b>
-        </div>
-        <div className="ud-docs">
-          {docs.map(([label, src]) =>
-            src ? (
-              <a className="ud-doc" key={label} href={src} target="_blank" rel="noopener">
-                <img src={src} alt={label} loading="lazy" />
-                <span className="ud-doc-l">
-                  {label} <em>View ↗</em>
-                </span>
+      {/* ---------------- Hero ---------------- */}
+      <div className="ud-hero">
+        <span className="ud-hero-glow" />
+        <div className="ud-hero-inner">
+          <div className="ud-avatar">{avatar ? <img src={avatar} alt="" /> : initials}</div>
+          <div className="ud-id">
+            <div className="ud-name">{u.name || 'Unnamed user'}</div>
+            <div className="ud-chips">
+              <StatusPill status={u.role} />
+              <StatusPill status={u.licenseStatus} label={licenceLabel(u.licenseStatus)} />
+            </div>
+            <div className="ud-contacts">
+              <a className="ud-contact" href={`tel:${u.phone || ''}`}>
+                <i className="bd-ic ic-phone" />
+                {fmtPhone(u.phone)}
               </a>
-            ) : (
-              <div className="ud-doc empty" key={label}>
-                <span className="ud-doc-ph">No photo uploaded</span>
-                <span className="ud-doc-l">{label}</span>
-              </div>
-            ),
-          )}
-        </div>
-      </div>
-
-      <div className="ud-section">
-        <div className="ud-section-h">
-          <span>Account</span>
-        </div>
-        <div className="ud-meta">
-          <div className="ud-kv">
-            <span>Wallet</span>
-            <b>{money(u.walletBalance)}</b>
-          </div>
-          <div className="ud-kv">
-            <span>UPI ID</span>
-            <b>{u.upiId || '—'}</b>
-          </div>
-          <div className="ud-kv">
-            <span>Referral code</span>
-            <b>{u.referralCode || '—'}</b>
-          </div>
-          <div className="ud-kv">
-            <span>Joined</span>
-            <b>{fmtDate(u.createdAt)}</b>
+              {u.email && (
+                <a className="ud-contact" href={`mailto:${u.email}`}>
+                  <i className="bd-ic ic-mail" />
+                  {u.email}
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="form-actions">
+      {/* ---------------- Quick stats ---------------- */}
+      <div className="ud-stats">
+        <div className="ud-stat accent">
+          <i className="bd-ic ic-wallet" />
+          <div>
+            <span className="ud-stat-l">Wallet</span>
+            <span className="ud-stat-v">{money(u.walletBalance)}</span>
+          </div>
+        </div>
+        <div className="ud-stat">
+          <i className="bd-ic ic-shield" />
+          <div>
+            <span className="ud-stat-l">KYC</span>
+            <span className="ud-stat-v">{licenceLabel(u.licenseStatus)}</span>
+          </div>
+        </div>
+        <div className="ud-stat">
+          <i className="bd-ic ic-user" />
+          <div>
+            <span className="ud-stat-l">Role</span>
+            <span className="ud-stat-v">{u.role}</span>
+          </div>
+        </div>
+        <div className="ud-stat">
+          <i className="bd-ic ic-cal" />
+          <div>
+            <span className="ud-stat-l">Joined</span>
+            <span className="ud-stat-v">{fmtDate(u.createdAt)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------- Body ---------------- */}
+      <div className="ud-body">
+        <section className="ud-card">
+          <div className="ud-card-h">
+            <i className="bd-ic ic-id" />
+            <h4>Driving licence</h4>
+            <StatusPill status={u.licenseStatus} label={licenceLabel(u.licenseStatus)} />
+          </div>
+          <div className="ud-kv-list">
+            <div className="ud-kv">
+              <span>Licence number</span>
+              <b className="mono">{k.licenseNumber || '—'}</b>
+            </div>
+          </div>
+          <div className="ud-docs">
+            {docs.map(([label, src]) =>
+              src ? (
+                <a className="ud-doc" key={label} href={src} target="_blank" rel="noopener">
+                  <img src={src} alt={label} loading="lazy" />
+                  <span className="ud-doc-l">
+                    {label} <em>View ↗</em>
+                  </span>
+                </a>
+              ) : (
+                <div className="ud-doc empty" key={label}>
+                  <span className="ud-doc-ph">No photo uploaded</span>
+                  <span className="ud-doc-l">{label}</span>
+                </div>
+              ),
+            )}
+          </div>
+        </section>
+
+        <section className="ud-card">
+          <div className="ud-card-h">
+            <i className="bd-ic ic-wallet" />
+            <h4>Account</h4>
+          </div>
+          <div className="ud-kv-list">
+            <div className="ud-kv">
+              <span>Wallet balance</span>
+              <b>{money(u.walletBalance)}</b>
+            </div>
+            <div className="ud-kv">
+              <span>UPI ID</span>
+              <b>{u.upiId || '—'}</b>
+            </div>
+            <div className="ud-kv">
+              <span>Referral code</span>
+              <b className="mono">{u.referralCode || '—'}</b>
+            </div>
+            <div className="ud-kv">
+              <span>Joined</span>
+              <b>{fmtDate(u.createdAt)}</b>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* ---------------- Actions ---------------- */}
+      <div className="ud-actions">
         {u.licenseStatus === 'pending' && (
           <button className="btn danger" onClick={() => act('notSubmitted')}>
             Reject licence

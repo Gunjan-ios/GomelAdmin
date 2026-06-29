@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import type { Offer } from '../lib/types';
+import { money } from '../lib/format';
 import { closeModal } from '../components/Modal';
 import { toast } from '../components/Toast';
 
 // Promo code form modal. Ported 1:1 from offerForm(). Code is disabled when
-// editing; discount stored as a fraction (pct / 100).
+// editing; discount stored as a fraction (pct / 100). A live coupon preview at
+// the top reflects the field values as the admin types.
 export function OfferForm({ offer, onSaved }: { offer: Offer | null; onSaved: () => void }) {
   const p = offer || ({} as Offer);
 
@@ -37,42 +39,81 @@ export function OfferForm({ offer, onSaved }: { offer: Offer | null; onSaved: ()
     }
   };
 
+  const isOn = active === 'yes';
+  const pctNum = Math.max(0, Math.round(+pct || 0));
+
   return (
-    <div>
+    <div className="offer-form">
+      {/* ---------------- Live coupon preview ---------------- */}
+      <div className="offer-preview">
+        <div className={`coupon ${isOn ? 'on' : 'off'}`}>
+          <div className="coupon-stub">
+            <div className="coupon-pct">
+              {pctNum}
+              <span>%</span>
+            </div>
+            <div className="coupon-off">OFF</div>
+          </div>
+          <div className="coupon-body">
+            <div className="coupon-top">
+              <span className="coupon-code">{code || 'CODE'}</span>
+              <span className={`pill ${isOn ? 'ok' : 'gray'}`}>{isOn ? 'Active' : 'Inactive'}</span>
+            </div>
+            <div className="coupon-title">{title || 'Offer title'}</div>
+            <div className="coupon-desc">{desc || 'Add a short description shown to customers.'}</div>
+            <div className="coupon-meta">
+              <span>
+                <i className="bd-ic ic-rupee" />
+                Min fare {money(+min)}
+              </span>
+              <span>
+                <i className="bd-ic ic-tag" />
+                {+max > 0 ? `Up to ${money(+max)} off` : 'No cap'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------- Fields ---------------- */}
       <div className="form">
         <div>
           <label>Code</label>
-          <input value={code} onChange={(e) => setCode(e.target.value)} disabled={!!offer} placeholder="FIRST20" />
+          <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} disabled={!!offer} placeholder="FIRST20" />
         </div>
         <div>
           <label>Discount %</label>
-          <input type="number" value={pct} onChange={(e) => setPct(e.target.value)} />
+          <input type="number" min={0} max={100} value={pct} onChange={(e) => setPct(e.target.value)} />
         </div>
         <div className="full">
           <label>Title</label>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Flat 20% off your first trip" />
         </div>
         <div className="full">
           <label>Description</label>
-          <input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} />
+          <input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Shown under the code at checkout" />
         </div>
         <div>
           <label>Min fare (₹)</label>
-          <input type="number" value={min} onChange={(e) => setMin(e.target.value)} />
+          <input type="number" min={0} value={min} onChange={(e) => setMin(e.target.value)} />
         </div>
         <div>
           <label>Max discount (₹, 0 = none)</label>
-          <input type="number" value={max} onChange={(e) => setMax(e.target.value)} />
+          <input type="number" min={0} value={max} onChange={(e) => setMax(e.target.value)} />
         </div>
-        <div>
-          <label>Active</label>
-          <select value={active} onChange={(e) => setActive(e.target.value)}>
-            {['yes', 'no'].map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </select>
+        <div className="full">
+          <label>Status</label>
+          <div className="seg" role="tablist">
+            <button type="button" className={isOn ? 'on' : ''} onClick={() => setActive('yes')}>
+              Active
+            </button>
+            <button type="button" className={!isOn ? 'on' : ''} onClick={() => setActive('no')}>
+              Inactive
+            </button>
+          </div>
         </div>
       </div>
+
       <div className="form-actions">
         <button className="btn ghost" onClick={closeModal}>
           Cancel

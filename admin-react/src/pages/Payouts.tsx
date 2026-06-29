@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 import type { Envelope, Payout } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { fmtDate, money } from '../lib/format';
 import { FilterableList, type Control } from '../components/FilterableList';
 import { StatusPill } from '../components/StatusPill';
@@ -13,7 +14,7 @@ export function Payouts() {
     api<Envelope<Payout[]>>('/admin/payouts'),
   );
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={6} />;
   if (error) return <div className="empty">{error}</div>;
 
   const payouts = data?.data || [];

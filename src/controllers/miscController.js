@@ -1,9 +1,13 @@
 'use strict';
 
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const env = require('../config/env');
 const prisma = require('../db/prisma');
+const cloud = require('../config/cloudinary');
 const {
   subscriptionView,
   toProfile,
@@ -175,15 +179,61 @@ exports.submitKyc = asyncHandler(async (req, res) => {
 
 // ---------------- Uploads ----------------
 
-/** POST /uploads  (multipart, field "file")  -> { url } */
+/** POST /uploads  (multipart, field "file")  -> { url, publicId } */
 exports.upload = asyncHandler(async (req, res) => {
   if (!req.file) throw ApiError.badRequest('No file uploaded (field name: file)');
+
+  // Preferred path: stream the buffer to Cloudinary and return its CDN URL.
+  if (env.cloudinaryEnabled) {
+    const { url, publicId } = await cloud.uploadBuffer(req.file.buffer);
+    return res.status(201).json({ url, publicId });
+  }
+
+  // Fallback (Cloudinary not configured): persist to local disk under /uploads.
+  const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  const ext = path.extname(req.file.originalname) || '.jpg';
+  const filename = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`;
+  fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+
   // Prefer an explicit PUBLIC_BASE_URL; otherwise derive from how the client
   // reached us so the URL works from the app's host (not localhost). Honour the
   // X-Forwarded-* headers set by a reverse proxy.
   const proto = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.headers['x-forwarded-host'] || req.get('host');
   const base = env.publicBaseUrl || `${proto}://${host}`;
-  const url = `${base.replace(/\/$/, '')}/uploads/${req.file.filename}`;
-  res.status(201).json({ url });
+  const url = `${base.replace(/\/$/, '')}/uploads/${filename}`;
+  res.status(201).json({ url, publicId: null });
+});
+
+/**
+ * DELETE /uploads  (JSON body { publicId } or { url })  -> { deleted: true }
+ * Removes an uploaded image. For Cloudinary assets pass the publicId returned
+ * from upload (or the delivery url, from which the publicId is derived). For
+ * local-disk fallback assets the matching file under /uploads is removed.
+ */
+exports.deleteUpload = asyncHandler(async (req, res) => {
+  const publicId = typeof req.body?.publicId === 'string' ? req.body.publicId : '';
+  const url = typeof req.body?.url === 'string' ? req.body.url : '';
+  if (!publicId && !url) {
+    throw ApiError.badRequest('Provide a publicId or url to delete');
+  }
+
+  if (env.cloudinaryEnabled) {
+    const id = publicId || cloud.publicIdFromUrl(url);
+    if (!id) throw ApiError.badRequest('Could not determine the image to delete');
+    const result = await cloud.deleteByPublicId(id);
+    // Cloudinary returns { result: 'ok' | 'not found' }.
+    return res.json({ deleted: result.result === 'ok', result: result.result });
+  }
+
+  // Local-disk fallback: delete the file named in the url, guarding against
+  // path traversal by using only its basename within the uploads dir.
+  if (!url) throw ApiError.badRequest('Provide the url to delete');
+  const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+  const filename = path.basename(new URL(url, 'http://x').pathname);
+  const target = path.join(uploadDir, filename);
+  const deleted = fs.existsSync(target);
+  if (deleted) fs.unlinkSync(target);
+  res.json({ deleted });
 });

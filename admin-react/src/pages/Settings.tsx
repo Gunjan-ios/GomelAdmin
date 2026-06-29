@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { FormSkeleton } from '../components/Skeleton';
 import { api, uploadFile } from '../lib/api';
 import { money, fmtDate } from '../lib/format';
 import { toast } from '../components/Toast';
@@ -564,7 +565,7 @@ function ConfigCard() {
         {err ? (
           <div className="set-config-loading">{err}</div>
         ) : !cfg ? (
-          <div className="set-config-loading">Loading…</div>
+          <FormSkeleton />
         ) : (
           <ConfigBody cfg={cfg} />
         )}

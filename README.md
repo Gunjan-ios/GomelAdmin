@@ -208,4 +208,3 @@ backend/
 > VPS or a free Node host (Render/Railway) and point `DATABASE_URL` at a managed
 > Postgres (Neon/Supabase). Real-time chat would use polling rather than
 > websockets on shared hosting.
-# GomelAdmin

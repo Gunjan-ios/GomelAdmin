@@ -1,5 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { BootLoader } from './components/BootLoader';
 import { Layout } from './components/Layout';
 import { ModalHost } from './components/Modal';
 import { ToastHost } from './components/Toast';
@@ -21,13 +22,7 @@ import { Settings } from './pages/Settings';
 function Shell() {
   const { ready, loggedIn } = useAuth();
 
-  if (!ready) {
-    return (
-      <div className="login-wrap">
-        <div className="empty">Loading…</div>
-      </div>
-    );
-  }
+  if (!ready) return <BootLoader />;
 
   if (!loggedIn) return <Login />;
 

@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../lib/api';
 import type { Car } from '../lib/types';
 import { FEATURE_CATALOG } from '../lib/constants';
+import { imgSrc, money } from '../lib/format';
 import { closeModal } from '../components/Modal';
 import { toast } from '../components/Toast';
 import { PhotoGrid } from '../components/PhotoGrid';
@@ -9,6 +11,63 @@ import { PhotoGrid } from '../components/PhotoGrid';
 const PHOTO_SLOTS = ['Front', 'Rear', 'Left', 'Right', 'Interior', 'Dashboard'];
 const RC_SLOTS = ['RC front', 'RC back'];
 const ALL_CATALOG = ([] as string[]).concat(...Object.values(FEATURE_CATALOG));
+
+const TYPES = ['SUV', 'Sedan', 'Hatchback', 'Luxury'];
+const TRANSMISSIONS = ['manual', 'automatic'];
+const FUELS = ['petrol', 'diesel', 'electric', 'hybrid'];
+
+// Small reusable segmented control — replaces a <select> with tappable chips.
+function Segmented({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="seg" role="group">
+      {options.map((o) => (
+        <button
+          type="button"
+          key={o}
+          className={`seg-opt ${value === o ? 'on' : ''}`}
+          aria-pressed={value === o}
+          onClick={() => onChange(o)}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Plus/minus stepper for small integer counts (seats).
+function Stepper({
+  value,
+  min = 1,
+  max = 12,
+  onChange,
+}: {
+  value: number;
+  min?: number;
+  max?: number;
+  onChange: (v: number) => void;
+}) {
+  const clamp = (n: number) => Math.max(min, Math.min(max, n));
+  return (
+    <div className="stepper">
+      <button type="button" onClick={() => onChange(clamp(value - 1))} disabled={value <= min}>
+        −
+      </button>
+      <span className="stepper-val">{value}</span>
+      <button type="button" onClick={() => onChange(clamp(value + 1))} disabled={value >= max}>
+        +
+      </button>
+    </div>
+  );
+}
 
 // Multi-section feature picker. Stacked popup above the car-form modal.
 function FeatureSheet({
@@ -46,7 +105,10 @@ function FeatureSheet({
 
   const custom = selected.filter((f) => !ALL_CATALOG.includes(f));
 
-  return (
+  // Portal to <body> so the overlay escapes the modal card's containing block
+  // (the modal's backdrop-filter/animation makes position:fixed resolve against
+  // the scrolling card instead of the viewport).
+  return createPortal(
     <div className="sheet-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet-card">
         <div className="sheet-head">
@@ -117,7 +179,8 @@ function FeatureSheet({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -130,7 +193,7 @@ export function CarForm({ car, onSaved }: { car: Car | null; onSaved: () => void
   const [type, setType] = useState(c.type || 'SUV');
   const [trans, setTrans] = useState(c.transmission || 'manual');
   const [fuel, setFuel] = useState(c.fuel || 'petrol');
-  const [seats, setSeats] = useState(String(c.seats ?? 5));
+  const [seats, setSeats] = useState(c.seats ?? 5);
   const [pph, setPph] = useState(String(c.pricePerHour ?? 0));
   const [ppd, setPpd] = useState(String(c.pricePerDay ?? 0));
   const [addr, setAddr] = useState(c.pickupAddress || '');
@@ -140,8 +203,12 @@ export function CarForm({ car, onSaved }: { car: Car | null; onSaved: () => void
     (Array.isArray(c.features) ? c.features : []).filter(Boolean),
   );
   const [hostName, setHostName] = useState(c.host?.name || '');
-  const [active, setActive] = useState(c.active === false ? 'no' : 'yes');
+  const [active, setActive] = useState(c.active !== false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const hero = slots.find(Boolean);
+  const photoCount = slots.filter(Boolean).length;
 
   const save = async () => {
     const payload = {
@@ -156,8 +223,9 @@ export function CarForm({ car, onSaved }: { car: Car | null; onSaved: () => void
       images: slots.filter(Boolean),
       features,
       host: { name: hostName },
-      active: active === 'yes',
+      active,
     };
+    setSaving(true);
     try {
       if (car) await api(`/admin/cars/${car.id}`, { method: 'PATCH', body: payload });
       else await api('/admin/cars', { method: 'POST', body: payload });
@@ -166,70 +234,145 @@ export function CarForm({ car, onSaved }: { car: Car | null; onSaved: () => void
       onSaved();
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div>
-      <div className="form">
-        <div className="full">
-          <label>Name</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+    <div className="car-form">
+      {/* Live preview banner */}
+      <div className="cf-hero">
+        <div className="cf-hero-thumb">
+          {hero && imgSrc(hero) ? (
+            <img src={imgSrc(hero)} alt="" />
+          ) : (
+            <span className="cf-hero-ph i-car" aria-hidden />
+          )}
         </div>
-        <div>
-          <label>Type</label>
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            {['SUV', 'Sedan', 'Hatchback', 'Luxury'].map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </select>
+        <div className="cf-hero-info">
+          <div className="cf-hero-name">{name || 'Untitled car'}</div>
+          <div className="cf-hero-pills">
+            <span className="cf-pill">{type}</span>
+            <span className="cf-pill">{seats} seats</span>
+            <span className="cf-pill accent">{money(+ppd || 0)}/day</span>
+            <span className={`cf-pill ${active ? 'ok' : 'off'}`}>{active ? 'Active' : 'Hidden'}</span>
+          </div>
         </div>
-        <div>
-          <label>Transmission</label>
-          <select value={trans} onChange={(e) => setTrans(e.target.value)}>
-            {['manual', 'automatic'].map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Fuel</label>
-          <select value={fuel} onChange={(e) => setFuel(e.target.value)}>
-            {['petrol', 'diesel', 'electric', 'hybrid'].map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Seats</label>
-          <input type="number" value={seats} onChange={(e) => setSeats(e.target.value)} />
-        </div>
-        <div>
-          <label>Price / hour</label>
-          <input type="number" value={pph} onChange={(e) => setPph(e.target.value)} />
-        </div>
-        <div>
-          <label>Price / day</label>
-          <input type="number" value={ppd} onChange={(e) => setPpd(e.target.value)} />
-        </div>
-        <div className="full">
-          <label>Pickup address</label>
-          <input type="text" value={addr} onChange={(e) => setAddr(e.target.value)} />
-        </div>
-        <div className="full">
-          <label>
-            Car photos <span className="lbl-hint">(max 6)</span>
-          </label>
+      </div>
+
+      <div className="cf-body">
+        {/* ---------------- Details ---------------- */}
+        <section className="cf-section">
+          <header className="cf-sec-head">
+            <span className="cf-sec-ic i-car" aria-hidden />
+            <div>
+              <h4>Vehicle details</h4>
+              <p>Identity & specifications shown to renters.</p>
+            </div>
+          </header>
+          <div className="cf-grid">
+            <div className="full">
+              <label>Car name</label>
+              <input
+                type="text"
+                placeholder="e.g. Toyota Fortuner"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="full">
+              <label>Body type</label>
+              <Segmented value={type} options={TYPES} onChange={setType} />
+            </div>
+            <div>
+              <label>Transmission</label>
+              <Segmented value={trans} options={TRANSMISSIONS} onChange={setTrans} />
+            </div>
+            <div>
+              <label>Seats</label>
+              <Stepper value={seats} onChange={setSeats} />
+            </div>
+            <div className="full">
+              <label>Fuel type</label>
+              <Segmented value={fuel} options={FUELS} onChange={setFuel} />
+            </div>
+          </div>
+        </section>
+
+        {/* ---------------- Pricing ---------------- */}
+        <section className="cf-section">
+          <header className="cf-sec-head">
+            <span className="cf-sec-ic i-rupee" aria-hidden />
+            <div>
+              <h4>Pricing</h4>
+              <p>Rates charged to the customer.</p>
+            </div>
+          </header>
+          <div className="cf-grid">
+            <div>
+              <label>Price / hour</label>
+              <div className="cf-money">
+                <span className="cf-money-pre">₹</span>
+                <input type="number" min="0" value={pph} onChange={(e) => setPph(e.target.value)} />
+                <span className="cf-money-suf">/hr</span>
+              </div>
+            </div>
+            <div>
+              <label>Price / day</label>
+              <div className="cf-money">
+                <span className="cf-money-pre">₹</span>
+                <input type="number" min="0" value={ppd} onChange={(e) => setPpd(e.target.value)} />
+                <span className="cf-money-suf">/day</span>
+              </div>
+            </div>
+            <div className="full">
+              <label>Pickup address</label>
+              <input
+                type="text"
+                placeholder="Where renters collect the car"
+                value={addr}
+                onChange={(e) => setAddr(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ---------------- Photos ---------------- */}
+        <section className="cf-section">
+          <header className="cf-sec-head">
+            <span className="cf-sec-ic i-image" aria-hidden />
+            <div>
+              <h4>Car photos</h4>
+              <p>Up to 6 angles.</p>
+            </div>
+            <span className="cf-count">{photoCount}/6</span>
+          </header>
           <PhotoGrid names={PHOTO_SLOTS} slots={slots} onChange={setSlots} />
-        </div>
-        <div className="full">
-          <label>
-            RC book <span className="lbl-hint">(ownership proof)</span>
-          </label>
+        </section>
+
+        {/* ---------------- Documents ---------------- */}
+        <section className="cf-section">
+          <header className="cf-sec-head">
+            <span className="cf-sec-ic i-id" aria-hidden />
+            <div>
+              <h4>RC book</h4>
+              <p>Registration certificate — ownership proof.</p>
+            </div>
+          </header>
           <PhotoGrid names={RC_SLOTS} slots={rcSlots} onChange={setRcSlots} />
-        </div>
-        <div className="full">
-          <label>Features</label>
+        </section>
+
+        {/* ---------------- Features ---------------- */}
+        <section className="cf-section">
+          <header className="cf-sec-head">
+            <span className="cf-sec-ic i-sliders" aria-hidden />
+            <div>
+              <h4>Features</h4>
+              <p>Highlights & amenities.</p>
+            </div>
+            {features.length > 0 && <span className="cf-count">{features.length}</span>}
+          </header>
           <div className="feat-summary">
             {features.length === 0 ? (
               <span className="feat-empty">No features selected yet.</span>
@@ -251,28 +394,48 @@ export function CarForm({ car, onSaved }: { car: Car | null; onSaved: () => void
           <button type="button" className="btn ghost feat-open" onClick={() => setSheetOpen(true)}>
             ＋ Select features
           </button>
-        </div>
-        <div>
-          <label>Host name</label>
-          <input type="text" value={hostName} onChange={(e) => setHostName(e.target.value)} />
-        </div>
-        <div>
-          <label>Active</label>
-          <select value={active} onChange={(e) => setActive(e.target.value)}>
-            {['yes', 'no'].map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </select>
-        </div>
+        </section>
+
+        {/* ---------------- Host & visibility ---------------- */}
+        <section className="cf-section">
+          <header className="cf-sec-head">
+            <span className="cf-sec-ic i-user" aria-hidden />
+            <div>
+              <h4>Host & visibility</h4>
+              <p>Owner and listing status.</p>
+            </div>
+          </header>
+          <div className="cf-grid">
+            <div className="full">
+              <label>Host name</label>
+              <input type="text" value={hostName} onChange={(e) => setHostName(e.target.value)} />
+            </div>
+            <div className="full">
+              <label>Listing status</label>
+              <button
+                type="button"
+                className={`cf-switch ${active ? 'on' : ''}`}
+                role="switch"
+                aria-checked={active}
+                onClick={() => setActive(!active)}
+              >
+                <span className="cf-switch-knob" />
+                <span className="cf-switch-txt">{active ? 'Active — visible to renters' : 'Hidden from app'}</span>
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
-      <div className="form-actions">
-        <button className="btn ghost" onClick={closeModal}>
+
+      <div className="form-actions cf-actions">
+        <button className="btn ghost" onClick={closeModal} disabled={saving}>
           Cancel
         </button>
-        <button className="btn" onClick={save}>
-          Save
+        <button className="btn" onClick={save} disabled={saving}>
+          {saving ? 'Saving…' : car ? 'Save changes' : 'Add car'}
         </button>
       </div>
+
       {sheetOpen && (
         <FeatureSheet selected={features} onChange={setFeatures} onClose={() => setSheetOpen(false)} />
       )}

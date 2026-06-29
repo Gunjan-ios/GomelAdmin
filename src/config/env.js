@@ -42,9 +42,25 @@ const env = {
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
   firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
   firebasePrivateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+
+  // Cloudinary (image hosting). When all three are present, uploads are sent to
+  // Cloudinary and the secure CDN URL is returned. With any missing, uploads
+  // fall back to local disk under /uploads (development convenience).
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '',
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || '',
+  // Folder under which uploaded assets are stored in Cloudinary.
+  cloudinaryFolder: process.env.CLOUDINARY_FOLDER || 'gomel-cars',
 };
 
 env.useRealPayments = !!(env.razorpayKeyId && env.razorpayKeySecret);
+
+// Cloudinary is used only when all three credentials are present.
+env.cloudinaryEnabled = !!(
+  env.cloudinaryCloudName &&
+  env.cloudinaryApiKey &&
+  env.cloudinaryApiSecret
+);
 
 // Push is on only when all three Firebase credentials are present.
 env.pushEnabled = !!(

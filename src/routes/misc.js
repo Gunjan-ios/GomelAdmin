@@ -26,5 +26,6 @@ router.post('/inspections', requireAuth, ctrl.createInspection);
 router.post('/kyc', requireAuth, ctrl.submitKyc);
 
 router.post('/uploads', requireAuth, upload.single('file'), ctrl.upload);
+router.delete('/uploads', requireAuth, ctrl.deleteUpload);
 
 module.exports = router;

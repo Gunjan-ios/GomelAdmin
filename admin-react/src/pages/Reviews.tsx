@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../lib/api';
 import type { Review, Envelope } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { fmtDate } from '../lib/format';
 import { Stars } from '../components/Charts';
 import { PaginatedTable } from '../components/Table';
@@ -13,7 +14,7 @@ export function Reviews() {
   const [rating, setRating] = useState('');
   const [author, setAuthor] = useState('');
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={5} />;
   if (error) return <div className="empty">{error}</div>;
 
   const rows = data?.data || [];

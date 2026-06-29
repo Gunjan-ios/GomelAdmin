@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 import type { Car, Envelope } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { money } from '../lib/format';
 import { FilterableList, type Control } from '../components/FilterableList';
 import { StatusPill } from '../components/StatusPill';
@@ -12,7 +13,7 @@ import { CarForm } from '../modals/CarForm';
 export function Cars() {
   const { data, loading, error, reload } = useFetch(() => api<Envelope<Car[]>>('/admin/cars'));
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={7} />;
   if (error) return <div className="empty">{error}</div>;
 
   const cars = data?.data || [];

@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 import type { Booking, Envelope } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { money, fmtDate } from '../lib/format';
 import { FilterableList, type Control } from '../components/FilterableList';
 import { StatusPill } from '../components/StatusPill';
@@ -16,7 +17,7 @@ export function Bookings() {
     api<Envelope<Booking[]>>('/admin/bookings'),
   );
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={6} />;
   if (error) return <div className="empty">{error}</div>;
 
   const bookings = data?.data || [];

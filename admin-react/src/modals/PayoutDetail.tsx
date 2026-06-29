@@ -44,70 +44,116 @@ export function PayoutDetail({ payout: p, onSaved }: { payout: Payout; onSaved: 
     setPayout(p, status, onSaved);
   };
 
+  const status = displayStatus(p.status);
+
   return (
     <div className="udetail">
-      <div className="ud-head">
-        <div className="ud-avatar">💸</div>
-        <div className="ud-id">
-          <div className="ud-name">
-            {payoutHostName(p)} <StatusPill status={displayStatus(p.status)} />
+      {/* ---------------- Hero ---------------- */}
+      <div className="ud-hero">
+        <span className="ud-hero-glow" />
+        <div className="ud-hero-inner">
+          <div className="ud-avatar ud-avatar-ico">
+            <i className="bd-ic ic-wallet" />
           </div>
-          <div className="ud-sub">Payout {p.id}</div>
-        </div>
-      </div>
-
-      <div className="ud-section">
-        <div className="ud-section-h">
-          <span>Host</span>
-        </div>
-        <div className="ud-meta">
-          <div className="ud-kv">
-            <span>Name</span>
-            <b>{payoutHostName(p)}</b>
-          </div>
-          <div className="ud-kv">
-            <span>Phone</span>
-            <b>{fmtPhone(h.phone)}</b>
-          </div>
-          <div className="ud-kv">
-            <span>Email</span>
-            <b>{h.email || '—'}</b>
+          <div className="ud-id">
+            <div className="ud-name">{payoutHostName(p)}</div>
+            <div className="ud-chips">
+              <StatusPill status={status} />
+            </div>
+            <div className="ud-contacts">
+              <span className="ud-contact">
+                <i className="bd-ic ic-id" />
+                <span className="ud-code">Payout {p.id}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="ud-section">
-        <div className="ud-section-h">
-          <span>Payout</span>
-        </div>
-        <div className="ud-meta">
-          <div className="ud-kv">
-            <span>Amount</span>
-            <b>{money(p.amount)}</b>
-          </div>
-          <div className="ud-kv">
-            <span>UPI ID</span>
-            <b>{upi}</b>
-          </div>
-          <div className="ud-kv">
-            <span>Status</span>
-            <b>
-              <StatusPill status={displayStatus(p.status)} />
-            </b>
-          </div>
-          <div className="ud-kv">
-            <span>Requested on</span>
-            <b>{fmtDateTime(p.createdAt)}</b>
-          </div>
-          <div className="ud-kv">
-            <span>Paid on</span>
-            <b>{p.paidAt ? fmtDateTime(p.paidAt) : '—'}</b>
+      {/* ---------------- Quick stats ---------------- */}
+      <div className="ud-stats">
+        <div className="ud-stat accent">
+          <i className="bd-ic ic-rupee" />
+          <div>
+            <span className="ud-stat-l">Amount</span>
+            <span className="ud-stat-v">{money(p.amount)}</span>
           </div>
         </div>
+        <div className="ud-stat">
+          <i className="bd-ic ic-shield" />
+          <div>
+            <span className="ud-stat-l">Status</span>
+            <span className="ud-stat-v">{status}</span>
+          </div>
+        </div>
+        <div className="ud-stat">
+          <i className="bd-ic ic-cal" />
+          <div>
+            <span className="ud-stat-l">Requested</span>
+            <span className="ud-stat-v">{fmtDateTime(p.createdAt)}</span>
+          </div>
+        </div>
+        <div className="ud-stat">
+          <i className="bd-ic ic-clock" />
+          <div>
+            <span className="ud-stat-l">Paid</span>
+            <span className="ud-stat-v">{p.paidAt ? fmtDateTime(p.paidAt) : '—'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------- Body ---------------- */}
+      <div className="ud-body">
+        <section className="ud-card">
+          <div className="ud-card-h">
+            <i className="bd-ic ic-user" />
+            <h4>Host</h4>
+          </div>
+          <div className="ud-kv-list">
+            <div className="ud-kv">
+              <span>Name</span>
+              <b>{payoutHostName(p)}</b>
+            </div>
+            <div className="ud-kv">
+              <span>Phone</span>
+              <b>{fmtPhone(h.phone)}</b>
+            </div>
+            <div className="ud-kv">
+              <span>Email</span>
+              <b>{h.email || '—'}</b>
+            </div>
+          </div>
+        </section>
+
+        <section className="ud-card">
+          <div className="ud-card-h">
+            <i className="bd-ic ic-wallet" />
+            <h4>Payout</h4>
+            <StatusPill status={status} />
+          </div>
+          <div className="ud-kv-list">
+            <div className="ud-kv">
+              <span>Amount</span>
+              <b>{money(p.amount)}</b>
+            </div>
+            <div className="ud-kv">
+              <span>UPI ID</span>
+              <b className="mono">{upi}</b>
+            </div>
+            <div className="ud-kv">
+              <span>Requested on</span>
+              <b>{fmtDateTime(p.createdAt)}</b>
+            </div>
+            <div className="ud-kv">
+              <span>Paid on</span>
+              <b>{p.paidAt ? fmtDateTime(p.paidAt) : '—'}</b>
+            </div>
+          </div>
+        </section>
       </div>
 
       {p.status === 'requested' && (
-        <div className="form-actions">
+        <div className="ud-actions">
           <button className="btn danger" onClick={() => act('rejected')}>
             Reject
           </button>

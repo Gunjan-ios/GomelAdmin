@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 import type { Envelope, User } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
+import { TableSkeleton } from '../components/Skeleton';
 import { fmtPhone, money } from '../lib/format';
 import { FilterableList, type Control } from '../components/FilterableList';
 import { StatusPill } from '../components/StatusPill';
@@ -11,7 +12,7 @@ import { UserDetail, setKyc } from '../modals/UserDetail';
 export function Users() {
   const { data, loading, error, reload } = useFetch(() => api<Envelope<User[]>>('/admin/users'));
 
-  if (loading) return <div className="empty">Loading…</div>;
+  if (loading) return <TableSkeleton cols={7} />;
   if (error) return <div className="empty">{error}</div>;
 
   const users = data?.data || [];
