@@ -4,6 +4,7 @@ import { BootLoader } from './components/BootLoader';
 import { Layout } from './components/Layout';
 import { ModalHost } from './components/Modal';
 import { ToastHost } from './components/Toast';
+import { ConfirmHost } from './components/ConfirmDialog';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Cars } from './pages/Cars';
@@ -57,6 +58,7 @@ export function App() {
       <Shell />
       <ModalHost />
       <ToastHost />
+      <ConfirmHost />
     </AuthProvider>
   );
 }

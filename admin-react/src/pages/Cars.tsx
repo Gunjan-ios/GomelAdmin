@@ -8,6 +8,7 @@ import { StatusPill } from '../components/StatusPill';
 import { RowActions } from '../components/RowActions';
 import { openModal } from '../components/Modal';
 import { toast } from '../components/Toast';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { CarForm } from '../modals/CarForm';
 
 export function Cars() {
@@ -25,7 +26,17 @@ export function Cars() {
     openModal(car ? 'Edit car' : 'Add car', <CarForm car={car} onSaved={reload} />);
 
   const delCar = async (car: Car) => {
-    if (!confirm(`Delete "${car.name}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete car?',
+      message: (
+        <>
+          <b>{car.name}</b> will be permanently removed from the fleet. This can’t be undone.
+        </>
+      ),
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api(`/admin/cars/${car.id}`, { method: 'DELETE' });
       toast('Deleted');

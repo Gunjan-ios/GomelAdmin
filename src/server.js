@@ -6,6 +6,7 @@ const env = require('./config/env');
 const connectDb = require('./config/db');
 const realtime = require('./realtime/socket');
 const scheduler = require('./services/scheduler');
+const keepAlive = require('./scripts/keepAlive');
 
 (async () => {
   await connectDb();
@@ -14,6 +15,8 @@ const scheduler = require('./services/scheduler');
   realtime.init(server);
   // Poll for time-based booking reminders (1 hour before start / end).
   scheduler.start();
+  // Keep the Render instance warm: self-ping /health every 12 minutes.
+  keepAlive.start();
   server.listen(env.port, () => {
     console.log('');
     console.log('🚗 GoMel Cars API');

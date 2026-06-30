@@ -186,7 +186,7 @@ export function Dashboard() {
               title="Active hosts"
               sub="Listing partners"
               n={s.hosts}
-              onGo={() => navigate('/users')}
+              onGo={() => navigate('/users?role=host')}
             />
           </div>
         </div>

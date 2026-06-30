@@ -7,6 +7,7 @@ import { PaginatedTable } from '../components/Table';
 import { RowActions } from '../components/RowActions';
 import { openModal } from '../components/Modal';
 import { toast } from '../components/Toast';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { RewardForm } from '../modals/RewardForm';
 
 export function Rewards() {
@@ -21,7 +22,18 @@ export function Rewards() {
     openModal(reward ? 'Edit reward' : 'Add reward', <RewardForm reward={reward} onSaved={reload} />);
 
   const delReward = async (reward: Reward) => {
-    if (!confirm(`Delete reward "${reward.title}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete reward?',
+      message: (
+        <>
+          The reward <b>{reward.title}</b> will be removed and customers will no longer be able to
+          redeem it.
+        </>
+      ),
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api(`/admin/rewards/${reward.id}`, { method: 'DELETE' });
       toast('Deleted');

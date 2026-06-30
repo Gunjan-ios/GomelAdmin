@@ -20,6 +20,7 @@ router.get('/maintenance', ctrl.getMaintenance);
 router.patch('/maintenance', ctrl.setMaintenance);
 
 router.get('/stats', ctrl.stats);
+router.get('/notifications', ctrl.notifications);
 
 router.get('/users', ctrl.listUsers);
 router.patch('/users/:id', ctrl.updateUser);

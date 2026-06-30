@@ -116,7 +116,7 @@ body{
 
 /* ============================ Login ============================ */
 .login-wrap{
-  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;
   position:relative;overflow:hidden;
   background:radial-gradient(1200px 700px at 50% -20%,#21356e 0%,#0c1730 55%,#070d1d 100%);
 }
@@ -134,6 +134,11 @@ body{
   border:1px solid color-mix(in srgb,#fff 14%,transparent);
   box-shadow:var(--sh-lg);display:flex;flex-direction:column;
   animation:pop .45s cubic-bezier(.2,.8,.2,1) both;
+}
+.login-card .brand-logo{
+  width:64px;height:64px;border-radius:16px;object-fit:cover;
+  display:block;margin:0 auto 16px;
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
 }
 .login-card .brand{font-size:27px;font-weight:800;text-align:center;letter-spacing:-.02em}
 .login-card .brand-sub{
@@ -157,14 +162,32 @@ body{
 }
 .login-card button:hover{filter:brightness(1.06);box-shadow:0 12px 26px color-mix(in srgb,var(--accent) 50%,transparent)}
 .login-card button:active{transform:translateY(1px)}
+/* Password field with an inline show/hide eye toggle. The toggle resets the
+   accent-button styling it would otherwise inherit from `.login-card button`. */
+.login-card .pw-field{position:relative;display:flex}
+.login-card .pw-field input{flex:1;padding-right:46px}
+.login-card .pw-toggle{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;margin:0;padding:0;border:0;border-radius:9px;
+  background:transparent;color:var(--text-3);cursor:pointer;
+  box-shadow:none;filter:none;transition:color .15s,background .15s;
+}
+.login-card .pw-toggle:hover{background:var(--surface-2);color:var(--text);box-shadow:none;filter:none;transform:translateY(-50%)}
+.login-card .pw-toggle:active{transform:translateY(-50%)}
+.login-card .pw-toggle svg{width:19px;height:19px;display:block}
 .error{color:var(--bad);font-size:13px;margin-top:12px;text-align:center;font-weight:600}
 
 /* ============================ Layout ============================ */
-.app{display:flex;height:100vh;overflow:hidden}
+/* height:100dvh (dynamic viewport) instead of 100vh: on iOS Safari 100vh is the
+   height with the toolbars HIDDEN, so it runs taller than the screen and pushes
+   the sidebar's "Sign out" button down behind Safari's bottom toolbar. dvh tracks
+   the actually-visible height. 100vh kept as a fallback for old browsers. */
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden}
 .sidebar{
   width:236px;flex:0 0 236px;background:var(--side);color:var(--side-text);
   display:flex;flex-direction:column;padding:20px 16px;gap:6px;
-  position:sticky;top:0;height:100vh;
+  position:sticky;top:0;height:100vh;height:100dvh;
   border-right:1px solid rgba(255,255,255,.06);
 }
 .sidebar .brand{
@@ -257,6 +280,54 @@ body{
    bottom, so any bottom padding would leave a gap that rows scroll through. */
 .view{padding:28px 30px 0;overflow:auto;flex:1;min-height:0}
 .topbar-right{display:flex;align-items:center;gap:14px}
+
+/* ============================ Notifications ============================ */
+.notif-dd{position:relative}
+.notif-trigger{
+  position:relative;display:grid;place-items:center;width:40px;height:40px;cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:12px;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.notif-trigger:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--surface);box-shadow:0 4px 14px rgba(16,24,43,.07)}
+.notif-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.notif-dd.open .notif-trigger{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
+.notif-badge{
+  position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;
+  display:grid;place-items:center;border-radius:99px;background:#ef4444;color:#fff;
+  font:800 10.5px/1 'Inter',inherit;border:2px solid var(--surface);box-shadow:0 2px 6px rgba(239,68,68,.45);
+}
+
+.notif-menu{
+  position:absolute;top:calc(100% + 10px);right:0;width:340px;max-width:calc(100vw - 32px);
+  background:color-mix(in srgb,var(--surface) 92%,transparent);
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh-lg);padding:8px;z-index:40;
+  opacity:0;visibility:hidden;transform:translateY(-8px) scale(.96);transform-origin:top right;
+  transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility .18s;
+}
+.notif-dd.open .notif-menu{opacity:1;visibility:visible;transform:none}
+.notif-menu-h{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--text-3);padding:8px 10px 7px;
+}
+.notif-menu-count{
+  background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);
+  border-radius:99px;padding:2px 8px;font-size:11px;letter-spacing:.02em;
+}
+.notif-list{max-height:min(60vh,420px);overflow:auto}
+.notif-empty{padding:26px 12px;text-align:center;color:var(--text-3);font-size:13px;font-weight:500}
+.notif-item{
+  display:flex;align-items:flex-start;gap:11px;width:100%;cursor:pointer;text-align:left;
+  background:transparent;border:0;color:var(--text);padding:10px;border-radius:13px;
+  font-family:'Inter',inherit;transition:background .14s;
+}
+.notif-item:hover{background:var(--surface-2)}
+.notif-dot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;margin-top:6px}
+.notif-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.notif-title{font-weight:700;font-size:13.5px}
+.notif-text{font-size:12px;font-weight:500;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notif-time{font-size:11px;font-weight:500;color:var(--text-3);margin-top:1px}
 
 /* ============================ Theme dropdown ============================ */
 .theme-dd{position:relative}
@@ -577,6 +648,45 @@ td img.thumb{
 .form select::-ms-expand{display:none}
 .form select option{background:var(--surface);color:var(--text);padding:8px}
 .form-actions{padding:4px 22px 22px;display:flex;justify-content:flex-end;gap:12px}
+
+/* ============================ Confirm dialog ============================ */
+/* Styled replacement for window.confirm(). Sits above modals (z-index 60) so a
+   confirm triggered from within a modal flow still renders on top. */
+.confirm-overlay{
+  position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(6,11,24,.55);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  animation:fade .2s ease;
+}
+.confirm-card{
+  position:relative;background:var(--surface);border:1px solid var(--line);
+  border-radius:20px;box-shadow:var(--sh-lg);
+  width:min(400px,94vw);padding:28px 26px 22px;text-align:center;
+  animation:pop .28s cubic-bezier(.2,.8,.2,1) both;
+}
+.confirm-icon{
+  width:62px;height:62px;border-radius:50%;margin:0 auto 18px;
+  display:grid;place-items:center;
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);
+  box-shadow:0 0 0 8px color-mix(in srgb,var(--accent) 6%,transparent);
+}
+.confirm-card.danger .confirm-icon{
+  color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent);
+  box-shadow:0 0 0 8px color-mix(in srgb,var(--bad) 7%,transparent);
+}
+.confirm-icon svg{width:28px;height:28px}
+.confirm-title{margin:0 0 9px;font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.confirm-msg{margin:0 auto 24px;font-size:14px;line-height:1.55;color:var(--text-2);max-width:34ch}
+.confirm-msg b{color:var(--text);font-weight:700}
+.confirm-actions{display:flex;gap:10px}
+.confirm-actions .btn{flex:1;padding:11px 16px;font-size:14px}
+.confirm-actions .btn.danger-solid{
+  background:linear-gradient(135deg,color-mix(in srgb,#fff 12%,var(--bad)),var(--bad));color:#fff;
+  box-shadow:0 6px 16px color-mix(in srgb,var(--bad) 38%,transparent);
+}
+.confirm-actions .btn.danger-solid:hover{
+  filter:brightness(1.05);box-shadow:0 8px 20px color-mix(in srgb,var(--bad) 48%,transparent);
+}
 
 /* ============================ Offer form — coupon preview ============================ */
 .offer-form{display:flex;flex-direction:column}
@@ -1140,7 +1250,7 @@ td img.thumb{
    the left, the active thread (header + messages + reply box) on the right. */
 .support-wrap{
   display:grid;grid-template-columns:300px 1fr;padding:0;overflow:hidden;
-  height:calc(100vh - 150px);min-height:420px;
+  height:calc(100vh - 150px);height:calc(100dvh - 150px);min-height:420px;
 }
 .support-list{border-right:1px solid var(--line);overflow-y:auto;background:var(--surface-2)}
 .sup-item{
@@ -1739,4 +1849,17 @@ td img.thumb{
 @media (max-width:560px){
   .modal-card:has(.bdetail){width:min(580px,96vw)}
   .bd-photos{grid-template-columns:repeat(2,1fr)}
+}
+
+/* ============================ Mobile input zoom ============================ */
+/* iOS Safari auto-zooms the page when a focused field renders below 16px, which
+   looks like the layout "jumping" on an iPhone (e.g. tapping the login fields).
+   On touch devices, force form controls to 16px so the page stays put. !important
+   is needed to beat the class-scoped 14px input rules; viewport zoom stays enabled. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

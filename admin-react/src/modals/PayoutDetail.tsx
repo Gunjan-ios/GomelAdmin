@@ -3,6 +3,7 @@ import type { Host, Payout } from '../lib/types';
 import { fmtDateTime, fmtPhone, money } from '../lib/format';
 import { closeModal } from '../components/Modal';
 import { toast } from '../components/Toast';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { StatusPill } from '../components/StatusPill';
 
 // Resolve a human-readable host name whether `host` is a populated object or a raw id.
@@ -22,8 +23,24 @@ function displayStatus(status: string): 'paid' | 'rejected' | 'requested' {
 
 // PATCH /admin/payouts/{id} {status}, confirm with the exact verb, toast, refresh.
 export async function setPayout(payout: Payout, status: 'paid' | 'rejected', onSaved: () => void) {
-  const verb = status === 'paid' ? 'Mark this payout as PAID' : 'Reject this payout';
-  if (!confirm(`${verb}?`)) return;
+  const paid = status === 'paid';
+  const ok = await confirmDialog({
+    title: paid ? 'Mark payout as paid?' : 'Reject payout?',
+    message: paid ? (
+      <>
+        Confirm you’ve transferred <b>{money(payout.amount)}</b> to{' '}
+        <b>{payoutHostName(payout)}</b>.
+      </>
+    ) : (
+      <>
+        The payout request of <b>{money(payout.amount)}</b> from{' '}
+        <b>{payoutHostName(payout)}</b> will be rejected.
+      </>
+    ),
+    confirmLabel: paid ? 'Mark paid' : 'Reject',
+    danger: !paid,
+  });
+  if (!ok) return;
   try {
     await api(`/admin/payouts/${payout.id}`, { method: 'PATCH', body: { status } });
     toast(status === 'paid' ? 'Marked paid' : 'Rejected');

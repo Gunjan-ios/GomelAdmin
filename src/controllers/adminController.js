@@ -174,6 +174,114 @@ exports.stats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET /admin/notifications -> actionable items that need an admin's attention,
+ * derived live (no stored rows). Covers: pending KYC, open damage claims,
+ * requested payouts, and support threads awaiting a reply. Returns a flat list
+ * sorted newest-first, plus per-group counts and a total badge count.
+ */
+exports.notifications = asyncHandler(async (req, res) => {
+  const [kycUsers, claims, payouts, supportConvos] = await Promise.all([
+    prisma.user.findMany({
+      where: { licenseStatus: 'pending' },
+      select: { id: true, name: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.damageClaim.findMany({
+      where: { status: { not: 'resolved' } },
+      select: { id: true, carName: true, severity: true, status: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.payout.findMany({
+      where: { status: 'requested' },
+      select: { id: true, hostName: true, amount: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.conversation.findMany({
+      where: { type: 'support' },
+      select: { id: true, participants: true, lastMessage: true, lastAt: true },
+      orderBy: { lastAt: 'desc' },
+    }),
+  ]);
+
+  // A support thread "needs a reply" when its newest message came from the
+  // customer (senderRole 'user') — i.e. support hasn't answered the latest note.
+  let supportItems = [];
+  if (supportConvos.length) {
+    const convoIds = supportConvos.map((c) => c.id);
+    const latest = await prisma.message.findMany({
+      where: { conversation: { in: convoIds } },
+      orderBy: { time: 'desc' },
+      select: { conversation: true, senderRole: true },
+    });
+    const lastRole = {};
+    for (const m of latest) {
+      if (lastRole[m.conversation] === undefined) lastRole[m.conversation] = m.senderRole;
+    }
+
+    const custIds = supportConvos.map((c) => c.participants[0]).filter(Boolean);
+    const custs = custIds.length
+      ? await prisma.user.findMany({ where: { id: { in: custIds } }, select: { id: true, name: true } })
+      : [];
+    const nameById = {};
+    custs.forEach((u) => { nameById[u.id] = u.name; });
+
+    supportItems = supportConvos
+      .filter((c) => lastRole[c.id] === 'user')
+      .map((c) => ({
+        id: `support:${c.id}`,
+        kind: 'support',
+        title: 'New support message',
+        body: `${nameById[c.participants[0]] || 'Customer'}: ${c.lastMessage || ''}`.slice(0, 140),
+        time: c.lastAt,
+        link: 'support',
+      }));
+  }
+
+  const rupees = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
+
+  const items = [
+    ...kycUsers.map((u) => ({
+      id: `kyc:${u.id}`,
+      kind: 'kyc',
+      title: 'License verification pending',
+      body: `${u.name || 'A user'} submitted a license for review`,
+      time: u.updatedAt,
+      link: 'users',
+    })),
+    ...claims.map((c) => ({
+      id: `claim:${c.id}`,
+      kind: 'claim',
+      title: 'Damage claim to review',
+      body: `${c.carName || 'A car'} — ${c.severity} (${c.status})`,
+      time: c.createdAt,
+      link: 'claims',
+    })),
+    ...payouts.map((p) => ({
+      id: `payout:${p.id}`,
+      kind: 'payout',
+      title: 'Payout requested',
+      body: `${p.hostName || 'A host'} requested ${rupees(p.amount)}`,
+      time: p.createdAt,
+      link: 'payouts',
+    })),
+    ...supportItems,
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+  res.json({
+    data: {
+      count: items.length,
+      groups: {
+        kyc: kycUsers.length,
+        claims: claims.length,
+        payouts: payouts.length,
+        support: supportItems.length,
+      },
+      items,
+    },
+  });
+});
+
 // ---------------- Users ----------------
 
 exports.listUsers = asyncHandler(async (req, res) => {

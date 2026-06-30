@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemePicker } from '../theme/ThemePicker';
+import { NotificationBell } from './NotificationBell';
 
 // Sidebar nav — [path, label]. Order and labels match the original panel.
 const NAV: [string, string][] = [
@@ -86,6 +87,7 @@ export function Layout() {
             <h1 id="pageTitle">{title}</h1>
           </div>
           <div className="topbar-right">
+            <NotificationBell />
             <ThemePicker />
             <span className={`who ${admin?.avatarUrl ? 'has-avatar' : ''}`} style={whoStyle}>
               {whoName}

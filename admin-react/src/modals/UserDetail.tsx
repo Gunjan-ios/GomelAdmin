@@ -3,6 +3,7 @@ import type { LicenseStatus, User } from '../lib/types';
 import { fmtDate, fmtPhone, imgSrc, money } from '../lib/format';
 import { closeModal } from '../components/Modal';
 import { toast } from '../components/Toast';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { StatusPill } from '../components/StatusPill';
 
 // PATCH the user's KYC/licence status, toast, then refresh the caller's list.
@@ -39,6 +40,29 @@ export function UserDetail({ user: u, onSaved }: { user: User; onSaved: () => vo
   ];
 
   const act = async (status: LicenseStatus) => {
+    // Confirm the destructive demotions (revoke a verified licence / reject a
+    // pending one) before applying; approving is low-risk and goes straight through.
+    if (status === 'notSubmitted') {
+      const revoking = u.licenseStatus === 'verified';
+      const name = u.name || 'this user';
+      const ok = await confirmDialog({
+        title: revoking ? 'Revoke licence verification?' : 'Reject licence?',
+        message: revoking ? (
+          <>
+            <b>{name}</b>’s licence will be marked unverified. They won’t be able to book cars until
+            they re-submit and get approved again.
+          </>
+        ) : (
+          <>
+            <b>{name}</b>’s submitted licence will be rejected. They’ll need to upload it again for
+            review.
+          </>
+        ),
+        confirmLabel: revoking ? 'Revoke' : 'Reject',
+        danger: true,
+      });
+      if (!ok) return;
+    }
     await setKyc(u, status, onSaved);
     closeModal();
   };

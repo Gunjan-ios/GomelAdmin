@@ -7,6 +7,7 @@ import { PaginatedTable } from '../components/Table';
 import { RowActions } from '../components/RowActions';
 import { openModal } from '../components/Modal';
 import { toast } from '../components/Toast';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { OfferForm } from '../modals/OfferForm';
 
 export function Offers() {
@@ -21,7 +22,18 @@ export function Offers() {
     openModal(offer ? 'Edit code' : 'Add code', <OfferForm offer={offer} onSaved={reload} />);
 
   const delOffer = async (offer: Offer) => {
-    if (!confirm(`Delete code "${offer.id}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete promo code?',
+      message: (
+        <>
+          The code <b>{offer.id}</b> will stop working immediately and customers won’t be able to
+          apply it.
+        </>
+      ),
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api(`/admin/offers/${offer.id}`, { method: 'DELETE' });
       toast('Deleted');

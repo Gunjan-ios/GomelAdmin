@@ -31,12 +31,22 @@ interface Props<T> {
   columns: string[];
   row: (item: T) => Row;
   headBtn?: ReactNode;
+  // Seed filter/search values by control id (e.g. when arriving from a deep link).
+  initialValues?: Record<string, string>;
 }
 
 // Render a list page with a filter/search toolbar above a live-updating table.
 // Re-filters and rebuilds on every control change (no server round-trip).
-export function FilterableList<T>({ data, noun, controls, columns, row, headBtn }: Props<T>) {
-  const [values, setValues] = useState<Record<string, string>>({});
+export function FilterableList<T>({
+  data,
+  noun,
+  controls,
+  columns,
+  row,
+  headBtn,
+  initialValues,
+}: Props<T>) {
+  const [values, setValues] = useState<Record<string, string>>(initialValues || {});
 
   const setVal = (id: string, v: string) => setValues((prev) => ({ ...prev, [id]: v }));
   const clear = () => setValues({});

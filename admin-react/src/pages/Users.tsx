@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Envelope, User } from '../lib/types';
 import { useFetch } from '../lib/useFetch';
@@ -10,12 +11,19 @@ import { openModal } from '../components/Modal';
 import { UserDetail, setKyc } from '../modals/UserDetail';
 
 export function Users() {
+  const [searchParams] = useSearchParams();
   const { data, loading, error, reload } = useFetch(() => api<Envelope<User[]>>('/admin/users'));
 
   if (loading) return <TableSkeleton cols={7} />;
   if (error) return <div className="empty">{error}</div>;
 
   const users = data?.data || [];
+
+  // Seed the role filter when deep-linked (e.g. "Active hosts" from the dashboard).
+  const roleParam = searchParams.get('role') || '';
+  const initialValues = ['user', 'host', 'admin'].includes(roleParam)
+    ? { us_role: roleParam }
+    : undefined;
 
   const controls: Control<User>[] = [
     {
@@ -54,6 +62,7 @@ export function Users() {
       data={users}
       noun="user"
       controls={controls}
+      initialValues={initialValues}
       columns={['Name', 'Phone', 'Email', 'Role', 'KYC', 'Wallet', '']}
       row={(u) => [
         u.name || '—',

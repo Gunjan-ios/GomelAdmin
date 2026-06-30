@@ -7,6 +7,7 @@ import { PaginatedTable } from '../components/Table';
 import { PlanCard } from '../components/PlanCard';
 import { openModal } from '../components/Modal';
 import { toast } from '../components/Toast';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { PlanForm } from '../modals/PlanForm';
 import { SubscriptionsSkeleton } from '../components/Skeleton';
 
@@ -32,7 +33,18 @@ export function Subscriptions() {
     openModal(plan ? 'Edit plan' : 'Add plan', <PlanForm plan={plan} onSaved={reload} />);
 
   const delPlan = async (plan: Plan) => {
-    if (!confirm(`Delete plan "${plan.id}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete plan?',
+      message: (
+        <>
+          The plan <b>{plan.name || plan.id}</b> will be removed. Existing subscribers keep their
+          current plan until it expires.
+        </>
+      ),
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api(`/admin/plans/${plan.id}`, { method: 'DELETE' });
       toast('Deleted');

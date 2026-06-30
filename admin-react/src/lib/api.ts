@@ -38,8 +38,18 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
     const message = (data as { message?: string }).message || `HTTP ${res.status}`;
     throw new Error(message);
   }
+  // Any successful mutation (verify a KYC, pay a payout, reply to support, …)
+  // may have cleared an actionable item, so nudge the notification bell to
+  // re-fetch its badge count. Cheap, and keeps the count instantly accurate.
+  if (method !== 'GET') {
+    window.dispatchEvent(new Event(MUTATED_EVENT));
+  }
   return data as T;
 }
+
+// Fired after every successful non-GET admin API call. The NotificationBell
+// listens for it to refresh its badge the moment an action completes.
+export const MUTATED_EVENT = 'gomel:mutated';
 
 // Aggressively compress an image in the browser before upload: re-encode to
 // JPEG, downscale so the longest side is <= maxDim px, and apply a low quality.
